@@ -40,11 +40,14 @@
     <section class="tab active" id="tab-turfs">
       <div class="row top">
         <h2>Turfs (<span id="turfCount">0</span>)</h2>
-        <button class="small" id="drawStart">+ New turf</button>
+        <div style="display:flex; gap:6px;">
+          <button class="small" id="sortTurfsBtn">Sort: A-Z</button>
+          <button class="small" id="drawStart">+ New turf</button>
+        </div>
       </div>
       <div id="turfList"></div>
     </section>
-
+    
     <section class="tab" id="tab-daily">
       <div class="row top">
         <h2>Daily checklist</h2>
