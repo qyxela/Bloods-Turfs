@@ -321,18 +321,44 @@ function renderDaily() {
   $("daySummary").textContent = total + " check-ins, " + people.size + " people (" + date + ")";
 }
 
+async function deleteLogEntry(logId) {
+  const pin = prompt('ENTER ADMIN PIN TO DELETE THIS LOG ENTRY:');
+  if (!pin) return;
+
+  const enteredHash = await sha256(pin.trim());
+  if (enteredHash !== CONFIG.ADMIN_PIN_HASH) {
+    return toast('Incorrect Admin PIN!');
+  }
+
+  await write('log/' + logId, null);
+  renderLog();
+  toast('Log entry deleted');
+}
+
 function renderLog() {
-  const entries = Object.values(state.log).sort((a, b) => b.t - a.t).slice(0, 100);
+  const entries = Object.entries(state.log || {})
+    .sort((a, b) => b[1].t - a[1].t)
+    .slice(0, 100);
+
   if (!entries.length) {
-    $("logList").innerHTML = '<p class="muted">Nothing logged yet.</p>';
+    $('logList').innerHTML = '<p class="muted">Nothing logged yet.</p>';
     return;
   }
-  $("logList").innerHTML = entries.map(e => `
-    <div class="card">
-      <div class="row"><strong>${esc(e.user)}</strong><span class="muted">${timeAgo(e.t)}</span></div>
+
+  $('logList').innerHTML = entries
+    .map(([id, e]) => `
+    <div class="card" data-log-id="${esc(id)}">
+      <div class="row">
+        <strong>${esc(e.user)}</strong>
+        <div>
+          <span class="muted" style="margin-right:8px">${timeAgo(e.t)}</span>
+          <button class="small danger" data-act="delete-log">✕</button>
+        </div>
+      </div>
       <div class="muted">${esc(e.turf)}</div>
       <div>${esc(e.text)}</div>
-    </div>`).join("");
+    </div>`)
+    .join('');
 }
 
 function renderAll() {
@@ -419,6 +445,28 @@ function saveLoyalty() {
   renderAll();
 }
 
+async function deleteTurf() {
+  const t = state.turfs[selectedId];
+  if (!t) return;
+  if (!needName()) return;
+
+  const pin = prompt('ENTER ADMIN PIN TO DELETE THIS TURF:');
+  if (!pin) return;
+
+  const enteredHash = await sha256(pin.trim());
+  if (enteredHash !== CONFIG.ADMIN_PIN_HASH) {
+    return toast('Incorrect Admin PIN!');
+  }
+
+  if (!confirm('Delete "' + t.name + '"?')) return;
+
+  write("turfs/" + selectedId, null);
+  addLog(t.name, "deleted the turf");
+  selectedId = null;
+  renderAll();
+  toast('Turf deleted');
+}
+
 function deleteTurf() {
   const t = state.turfs[selectedId];
   if (!t) return;
@@ -487,6 +535,15 @@ function setupEvents() {
     if (e.target.dataset.tab) openTab(e.target.dataset.tab);
   });
 
+  $('logList').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-act="delete-log"]');
+    if (!btn) return;
+    const card = btn.closest('.card');
+    if (card && card.dataset.logId) {
+      deleteLogEntry(card.dataset.logId);
+    }
+  });
+  
   $("turfList").addEventListener("click", e => {
     const card = e.target.closest(".card");
     if (!card) return;
