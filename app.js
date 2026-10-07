@@ -496,7 +496,18 @@ function setupEvents() {
     if (btn) toggleTask(btn.dataset.turf, btn.dataset.task);
   });
 
-  $("drawStart").onclick = () => { setDrawing(true); toast("Click the map to place points"); };
+  $("drawStart").onclick = async () => {
+    const pin = prompt("ENTER ADMIN PIN TO DRAW A NEW TURF:");
+    if (!pin) return;
+
+    const enteredHash = await sha256(pin.trim());
+    if (enteredHash !== CONFIG.ADMIN_PIN_HASH) {
+      return toast("Incorrect Admin PIN! Only admins can create turfs.");
+    }
+
+    setDrawing(true);
+    toast("Click the map to place points");
+  };
   $("drawCancel").onclick = () => setDrawing(false);
   $("drawUndo").onclick = () => {
     drawPts.pop();
