@@ -15,17 +15,16 @@ async function checkSitePassword() {
   try {
     const hash = await sha256(entered.trim().toLowerCase());
 
-    
     if (hash === CONFIG.SITE_PASSWORD_HASH) {
       sessionStorage.setItem("bloods_auth", "true");
       return true;
     } else {
-      alert("Incorrect Password!\n\nYour browser generated hash:\n" + hash + "\n\nExpected hash:\n" + CONFIG.SITE_PASSWORD_HASH);
+      alert("Incorrect Password!");
       document.body.innerHTML = "<h2 style='color:white;text-align:center;margin-top:20%'>Access Denied</h2>";
       return false;
     }
   } catch (err) {
-    alert("Crypto API Error: " + err.message + "\n\nIf you are opening this locally (file:///), upload it to GitHub Pages first!");
+    alert("Authentication Error: " + err.message);
     document.body.innerHTML = "<h2 style='color:white;text-align:center;margin-top:20%'>Access Denied</h2>";
     return false;
   }
