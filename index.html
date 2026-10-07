@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bloods Turf Tracker</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>Bloods <span>Turf Tracker</span></h1>
+  <div class="who">
+    <span id="syncState"></span>
+    <label for="userName">You are</label>
+    <input id="userName" placeholder="name" maxlength="24">
+  </div>
+</header>
+
+<main>
+  <div id="mapWrap">
+    <div id="map"></div>
+    <div id="drawBar">
+      <span id="drawCount">0 points</span>
+      <button class="small" id="drawUndo">Undo</button>
+      <button class="small primary" id="drawFinish">Done</button>
+      <button class="small" id="drawCancel">Cancel</button>
+    </div>
+  </div>
+
+  <aside>
+    <nav id="tabs">
+      <button data-tab="turfs" class="active">Turfs</button>
+      <button data-tab="daily">Today</button>
+      <button data-tab="log">Log</button>
+      <button data-tab="data">Backup</button>
+    </nav>
+
+    <section class="tab active" id="tab-turfs">
+      <div class="row top">
+        <h2>Turfs (<span id="turfCount">0</span>)</h2>
+        <button class="small" id="drawStart">+ New turf</button>
+      </div>
+      <div id="turfList"></div>
+    </section>
+
+    <section class="tab" id="tab-daily">
+      <div class="row top">
+        <h2>Daily checklist</h2>
+        <input type="date" id="dayPick">
+      </div>
+      <p class="muted" id="daySummary"></p>
+      <div id="dailyList"></div>
+    </section>
+
+    <section class="tab" id="tab-log">
+      <h2>Latest activity</h2>
+      <div id="logList"></div>
+    </section>
+
+    <section class="tab" id="tab-data">
+      <h2>Backup</h2>
+      <p class="muted">Save everything to a file, or load an old one back in.</p>
+      <div class="actions">
+        <button id="exportBtn">Export</button>
+        <button id="importBtn">Import</button>
+        <input type="file" id="importFile" accept=".json" hidden>
+      </div>
+      <h2 class="space">Careful</h2>
+      <button class="danger" id="wipeBtn">Wipe everything</button>
+    </section>
+  </aside>
+</main>
+
+<dialog id="turfDialog">
+  <h3>New turf</h3>
+  <label for="tName">Name</label>
+  <input id="tName" maxlength="40">
+  <label for="tLoyalty">Loyalty right now</label>
+  <input id="tLoyalty" type="number" min="0" value="0">
+  <div class="dlg-actions">
+    <button id="turfCancel">Cancel</button>
+    <button class="primary" id="turfSave">Save</button>
+  </div>
+</dialog>
+
+<dialog id="loyaltyDialog">
+  <h3 id="lTitle">Loyalty</h3>
+  <label for="lValue">New score</label>
+  <input id="lValue" type="number" min="0">
+  <label for="lNote">What did you do?</label>
+  <textarea id="lNote" rows="3" placeholder="sold 50 coke, 5 sprays"></textarea>
+  <div class="dlg-actions">
+    <button id="lCancel">Cancel</button>
+    <button class="primary" id="lSave">Save</button>
+  </div>
+</dialog>
+
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
