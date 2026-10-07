@@ -1,10 +1,3 @@
-// Bloods turf tracker
-// data layout in the database:
-//   turfs/<id>                      -> name, poly (json string), loyalty, loyaltyAt
-//   checks/<date>/<turf>/<task>/<member> -> member name
-//   log/<id>                        -> t, user, turf, text
-// every change only writes its own little path so people don't overwrite each other
-
 const DB = CONFIG.DATABASE_URL.replace(/\/+$/, "");
 const LOCAL_KEY = "bloods_state";
 const MAX = CONFIG.MAX_LOYALTY;
@@ -32,7 +25,6 @@ function makeId(prefix) {
   return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 }
 
-// firebase keys can't have . # $ / [ ]
 function memberKey(name) {
   return name.replace(/[.#$\/\[\]]/g, "_");
 }
@@ -60,7 +52,7 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.classList.remove("on"), 2500);
 }
 
-// ---------- storage ----------
+// storage
 
 function fixState() {
   state.turfs = state.turfs || {};
@@ -112,7 +104,7 @@ async function load() {
     fixState();
     return;
   }
-  if (pending > 0) return; // don't overwrite something we're still saving
+  if (pending > 0) return;
   try {
     const res = await fetch(`${DB}/.json`);
     if (!res.ok) throw new Error("http " + res.status);
@@ -132,10 +124,8 @@ function showSync(ok) {
   el.style.color = ok ? "var(--good)" : "var(--red-light)";
 }
 
-// ---------- loyalty ----------
+// loyalty
 
-// we save the score + the time it was set and work out the decay when we read it,
-// so there's no timer that has to keep running
 function currentLoyalty(t) {
   const lost = (Date.now() - t.loyaltyAt) / 86400000 * CONFIG.DECAY_PER_DAY;
   return Math.max(0, t.loyalty - lost);
@@ -167,7 +157,7 @@ function addLog(turfName, text) {
   return write("log/" + makeId("l"), { t: Date.now(), user: user, turf: turfName, text: text });
 }
 
-// ---------- map ----------
+// map
 
 function initMap() {
   const size = CONFIG.MAP_SIZE;
@@ -234,7 +224,7 @@ function drawTurfs() {
   });
 }
 
-// ---------- sidebar ----------
+// sidebar
 
 function renderTurfs() {
   const list = sortedTurfs();
@@ -325,7 +315,7 @@ function openTab(name) {
   document.querySelectorAll(".tab").forEach(s => s.classList.toggle("active", s.id === "tab-" + name));
 }
 
-// ---------- actions ----------
+// actions
 
 function selectTurf(id, zoom) {
   selectedId = id;
@@ -443,7 +433,6 @@ async function wipeAll() {
   renderAll();
 }
 
-// ---------- wiring ----------
 
 function setupEvents() {
   $("userName").value = user;
@@ -509,7 +498,6 @@ async function start() {
   await load();
   renderAll();
 
-  // pick up what the others did + keep the decay numbers fresh
   setInterval(async () => {
     await load();
     renderAll();
