@@ -1,3 +1,28 @@
+async function sha256(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function checkSitePassword() {
+  if (sessionStorage.getItem("bloods_auth") === "true") return true;
+
+  const entered = prompt("Enter Passkey to access the site:");
+  if (!entered) {
+    document.body.innerHTML = "<h2 style='color:white;text-align:center;margin-top:20%'>Access Denied</h2>";
+    return false;
+  }
+
+  const hash = await sha256(entered.trim());
+  if (hash === CONFIG.SITE_PASSWORD_HASH) {
+    sessionStorage.setItem("bloods_auth", "true");
+    return true;
+  } else {
+    alert("Incorrect Password!");
+    document.body.innerHTML = "<h2 style='color:white;text-align:center;margin-top:20%'>Access Denied</h2>";
+    return false;
+  }
+}
+
 const DB = CONFIG.DATABASE_URL.replace(/\/+$/, "");
 const LOCAL_KEY = "bloods_state";
 const MAX = CONFIG.MAX_LOYALTY;
@@ -425,14 +450,23 @@ async function importData(file) {
 }
 
 async function wipeAll() {
-  if (!confirm("Delete ALL turfs, checklists and logs for everyone?")) return;
+  const pin = prompt("ENTER ADMIN PIN TO WIPE ALL DATA:");
+  if (!pin) return;
+
+  const enteredHash = await sha256(pin.trim());
+  if (enteredHash !== CONFIG.ADMIN_PIN_HASH) {
+    return toast("Incorrect Admin PIN!");
+  }
+
+  if (!confirm("CRITICAL WARNING: Delete ALL turfs, checklists, and logs permanently for everyone?")) return;
+
   for (const key of ["turfs", "checks", "log"]) {
     await write(key, null);
   }
   selectedId = null;
   renderAll();
+  toast("Database wiped completely!");
 }
-
 
 function setupEvents() {
   $("userName").value = user;
@@ -492,6 +526,9 @@ function setupEvents() {
 }
 
 async function start() {
+  const authorized = await checkSitePassword();
+  if (!authorized) return;
+
   initMap();
   setupEvents();
   showSync(true);
