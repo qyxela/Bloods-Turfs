@@ -563,7 +563,7 @@ function setupEvents() {
   $("sortTurfsBtn").onclick = () => {
     sortByLoyalty = !sortByLoyalty;
     $("sortTurfsBtn").textContent = sortByLoyalty ? "Sort: Loyalty" : "Sort: A-Z";
-    renderAll();
+    renderTurfs();
   };
 
   $("dayPick").value = today();
