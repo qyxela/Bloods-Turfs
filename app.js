@@ -45,6 +45,7 @@ let drawing = false;
 let drawPts = [];
 let drawDots = [];
 let drawLine = null;
+let sortByLoyalty = false;
 
 const $ = id => document.getElementById(id);
 
@@ -171,7 +172,13 @@ function loyaltyColor(v) {
 }
 
 function sortedTurfs() {
-  return Object.entries(state.turfs).sort((a, b) => a[1].name.localeCompare(b[1].name));
+  const entries = Object.entries(state.turfs || {});
+
+  if (sortByLoyalty) {
+    return entries.sort((a, b) => currentLoyalty(a[1]) - currentLoyalty(b[1]));
+  }
+
+  return entries.sort((a, b) => (a[1].name || "").localeCompare(b[1].name || ""));
 }
 
 function getPoly(t) {
@@ -552,6 +559,12 @@ function setupEvents() {
     else if (act === "delete") deleteTurf();
     else selectTurf(card.dataset.id);
   });
+
+  $("sortTurfsBtn").onclick = () => {
+    sortByLoyalty = !sortByLoyalty;
+    $("sortTurfsBtn").textContent = sortByLoyalty ? "Sort: Loyalty" : "Sort: A-Z";
+    renderTurfList();
+  };
 
   $("dayPick").value = today();
   $("dayPick").addEventListener("change", renderDaily);
