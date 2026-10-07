@@ -246,7 +246,7 @@ function drawTurfs() {
       fillColor: "#C04000",
       fillOpacity: 0.15 + (v / MAX) * 0.5
     }).addTo(map);
-
+    
     const tip = document.createElement("div");
     tip.innerHTML = "<b>" + esc(t.name) + "</b><br>" + Math.round(v) + " / " + MAX;
     poly.bindTooltip(tip, { sticky: true });
