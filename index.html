@@ -162,22 +162,19 @@
 <script>
 "use strict";
 
-/* ====================== CONFIG ====================== */
+/* CONFIG */
 const CONFIG = {
-  // Firebase Realtime Database URL, e.g. "https://my-gang-default-rtdb.firebaseio.com"
-  // Leave empty to store data only in this browser (nothing is shared).
-  DATABASE_URL: "",
+  DATABASE_URL: "https://bloods-turf-track-default-rtdb.europe-west1.firebasedatabase.app/",
 
-  MAP_IMAGE: "map.jpg",          // put your map image next to index.html
-  MAP_WIDTH: 2000,               // map coordinate space (any size, keep the image's aspect ratio)
-  MAP_HEIGHT: 2000,
-  MAX_LOYALTY: 1000,
-  DECAY_PER_DAY: 250,            // loyalty lost per 24h with no activity
-  TASKS: ["Spray", "Sell drugs"],// daily checklist items per turf
+  MAP_IMAGE: "images.jpg",         
+  MAP_WIDTH: 554,
+  MAP_HEIGHT: 554,
+  MAX_LOYALTY: 10000,
+  DECAY_PER_DAY: 250,
+  TASKS: ["Spray", "Sell drugs"],
   POLL_SECONDS: 15
 };
 
-/* ====================== HELPERS ====================== */
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
@@ -199,13 +196,6 @@ function toast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("on"), 2600);
 }
 
-/* ====================== STORAGE ======================
-   State shape:
-   turfs:  { id: { name, gang, color, poly(JSON string), loyalty, loyaltyAt } }
-   checks: { "YYYY-MM-DD": { turfId: { task: { memberKey: "Display name" } } } }
-   log:    { id: { t, user, turf, text } }
-   Each change writes only its own path, so two people editing
-   different things never overwrite each other. */
 let state = { turfs: {}, checks: {}, log: {} };
 const REMOTE = CONFIG.DATABASE_URL.replace(/\/$/, "");
 const LOCAL_KEY = "turf_tracker_state";
@@ -253,11 +243,10 @@ function setSync(ok) {
   $("syncState").style.color = !REMOTE ? "var(--warn)" : ok ? "var(--good)" : "var(--bad)";
 }
 
-/* ====================== DOMAIN LOGIC ====================== */
+/* DOMAIN LOGIC */
 let user = localStorage.getItem("turf_tracker_user") || "";
 let selectedId = null;
 
-// Loyalty is stored as "value at time X" and decays on read, so nothing needs a timer to stay accurate.
 function currentLoyalty(t) {
   const lost = (Date.now() - t.loyaltyAt) / 864e5 * CONFIG.DECAY_PER_DAY;
   return Math.max(0, t.loyalty - lost);
@@ -288,7 +277,7 @@ function toggleCheck(date, turfId, task) {
   renderLog();
 }
 
-/* ====================== MAP ====================== */
+/* MAP */
 let map, layers = {};
 let drawing = false, drawPts = [], drawMarkers = [], drawLine = null;
 
