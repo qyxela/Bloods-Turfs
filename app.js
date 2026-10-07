@@ -13,11 +13,7 @@ async function checkSitePassword() {
   }
 
   try {
-    const hash = await sha256(entered.trim().toLowerCase()); // lowercases automatically
-    
-    // DEBUG: Remove this alert after fixing!
-    console.log("Generated Hash:", hash);
-    console.log("Config Hash:   ", CONFIG.SITE_PASSWORD_HASH);
+    const hash = await sha256(entered.trim().toLowerCase());
 
     if (hash === CONFIG.SITE_PASSWORD_HASH) {
       sessionStorage.setItem("bloods_auth", "true");
