@@ -240,10 +240,10 @@ function drawTurfs() {
     const low = v / MAX < 0.35;
 
     const poly = L.polygon(pts, {
-      color: low ? "#d6a21c" : "#e5383b",
+      color: low ? "#8b0000",
       dashArray: low ? "6 4" : null,
       weight: id === selectedId ? 4 : 2,
-      fillColor: "#c4161c",
+      fillColor: "#C04000",
       fillOpacity: 0.15 + (v / MAX) * 0.5
     }).addTo(map);
 
