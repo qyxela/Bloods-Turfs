@@ -240,7 +240,7 @@ function drawTurfs() {
     const low = v / MAX < 0.35;
 
     const poly = L.polygon(pts, {
-      color: low ? "#8b0000",
+      color: "#8b0000",
       dashArray: low ? "6 4" : null,
       weight: id === selectedId ? 4 : 2,
       fillColor: "#C04000",
