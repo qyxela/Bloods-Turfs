@@ -12,12 +12,23 @@ async function checkSitePassword() {
     return false;
   }
 
-  const hash = await sha256(entered.trim());
-  if (hash === CONFIG.SITE_PASSWORD_HASH) {
-    sessionStorage.setItem("bloods_auth", "true");
-    return true;
-  } else {
-    alert("Incorrect Password!");
+  try {
+    const hash = await sha256(entered.trim().toLowerCase()); // lowercases automatically
+    
+    // DEBUG: Remove this alert after fixing!
+    console.log("Generated Hash:", hash);
+    console.log("Config Hash:   ", CONFIG.SITE_PASSWORD_HASH);
+
+    if (hash === CONFIG.SITE_PASSWORD_HASH) {
+      sessionStorage.setItem("bloods_auth", "true");
+      return true;
+    } else {
+      alert("Incorrect Password!\n\nYour browser generated hash:\n" + hash + "\n\nExpected hash:\n" + CONFIG.SITE_PASSWORD_HASH);
+      document.body.innerHTML = "<h2 style='color:white;text-align:center;margin-top:20%'>Access Denied</h2>";
+      return false;
+    }
+  } catch (err) {
+    alert("Crypto API Error: " + err.message + "\n\nIf you are opening this locally (file:///), upload it to GitHub Pages first!");
     document.body.innerHTML = "<h2 style='color:white;text-align:center;margin-top:20%'>Access Denied</h2>";
     return false;
   }
