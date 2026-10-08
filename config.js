@@ -6,7 +6,7 @@ const CONFIG = {
   MAP_IMAGE: "map.jpg",
   MAP_SIZE: 8192,
   MAX_LOYALTY: 10000,
-  DECAY_PER_DAY: 250,
+  DECAY_PER_DAY: 170,
   TASKS: ["Spray", "Sell drugs"],
   REFRESH_SECONDS: 15
 };
