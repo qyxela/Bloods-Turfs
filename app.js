@@ -160,6 +160,7 @@ function showSync(ok) {
 // loyalty
 
 function currentLoyalty(t) {
+  const elapsedMs = Math.max(0, Date.now() - t.loyaltyAt);
   const lost = (Date.now() - t.loyaltyAt) / 86400000 * CONFIG.DECAY_PER_DAY;
   return Math.max(0, t.loyalty - lost);
 }
