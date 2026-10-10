@@ -34,6 +34,20 @@ const DB = CONFIG.DATABASE_URL.replace(/\/+$/, "");
 const LOCAL_KEY = "bloods_state";
 const MAX = CONFIG.MAX_LOYALTY;
 
+// Drugs you can pick when selling. Edit this list to match the game.
+const DRUGS = ["Coke", "Weed", "Meth", "Other"];
+
+// Loyalty gained is remembered per activity (and per drug), so after you've
+// entered it once it is pre-filled next time.
+const GAINS_KEY = "bloods_gains";
+
+// Which checklist task each button is linked to. Matched against CONFIG.TASKS
+// by name; if nothing matches, the default name is added to the checklist.
+const KIND_TASKS = {
+  spray: { match: /spray/i, fallback: "Spray" },
+  sell:  { match: /sell|drug/i, fallback: "Sell drugs" }
+};
+
 let state = { turfs: {}, checks: {}, log: {} };
 let user = localStorage.getItem("bloods_user") || "";
 let selectedId = null;
@@ -197,6 +211,36 @@ function addLog(turfName, text) {
   return write("log/" + makeId("l"), { t: Date.now(), user: user, turf: turfName, text: text });
 }
 
+// activity <-> checklist link
+
+function taskFor(kind) {
+  const k = KIND_TASKS[kind];
+  return (CONFIG.TASKS || []).find(t => k.match.test(t)) || k.fallback;
+}
+
+function allTasks() {
+  const list = (CONFIG.TASKS || []).slice();
+  ["spray", "sell"].forEach(kind => {
+    const t = taskFor(kind);
+    if (!list.includes(t)) list.push(t);
+  });
+  return list;
+}
+
+function kindOfTask(task) {
+  if (task === taskFor("spray")) return "spray";
+  if (task === taskFor("sell")) return "sell";
+  return null;
+}
+
+function loadGains() {
+  try { return JSON.parse(localStorage.getItem(GAINS_KEY)) || {}; } catch (e) { return {}; }
+}
+
+function gainKey(kind, drug) {
+  return kind === "sell" ? "sell:" + drug : kind;
+}
+
 // map
 
 function initMap() {
@@ -309,7 +353,7 @@ function renderDaily() {
   }
 
   $("dailyList").innerHTML = turfs.map(([id, t]) => {
-    const rows = CONFIG.TASKS.map(task => {
+    const rows = allTasks().map(task => {
       const who = (day[id] && day[id][task]) || {};
       const names = Object.values(who);
       names.forEach(n => people.add(n));
@@ -398,6 +442,13 @@ function toggleTask(turfId, task) {
   const already = state.checks[date] && state.checks[date][turfId] &&
                   state.checks[date][turfId][task] && state.checks[date][turfId][task][key];
 
+  // Spray / Sell drugs: ask for loyalty when checking in (today only).
+  const kind = kindOfTask(task);
+  if (kind && !already && date === today()) {
+    openLoyaltyDialog(turfId, kind, true);
+    return;
+  }
+
   write(`checks/${date}/${turfId}/${task}/${key}`, already ? null : user);
   if (!already) addLog(state.turfs[turfId].name, "did: " + task + (date !== today() ? " (for " + date + ")" : ""));
   renderDaily();
@@ -426,29 +477,118 @@ function saveNewTurf() {
   renderAll();
 }
 
-function openLoyaltyDialog() {
-  const t = state.turfs[selectedId];
+let dlg = { turfId: null, kind: "spray", fromToday: false };
+
+function dlgBase() {
+  const t = state.turfs[dlg.turfId];
+  return t ? Math.round(currentLoyalty(t)) : 0;
+}
+
+function fillDrugs() {
+  $("lDrug").innerHTML = DRUGS.map(d => `<option>${esc(d)}</option>`).join("");
+}
+
+function setDlgKind(kind, keepValue) {
+  dlg.kind = kind;
+  document.querySelectorAll("#lKind button").forEach(b => b.classList.toggle("on", b.dataset.kind === kind));
+  $("lDrugWrap").style.display = kind === "sell" ? "" : "none";
+
+  if (kind === "set") {
+    $("lValueLabel").textContent = "New score";
+    $("lValue").max = MAX;
+    $("lValue").value = dlgBase();
+  } else {
+    $("lValueLabel").textContent = "Loyalty gained";
+    $("lValue").removeAttribute("max");
+    if (!keepValue) {
+      const g = loadGains()[gainKey(kind, $("lDrug").value)];
+      $("lValue").value = g == null ? "" : g;
+    }
+  }
+  $("lFix").style.display = kind === "set" ? "none" : "";
+  updatePreview();
+}
+
+function updatePreview() {
+  const v = parseInt($("lValue").value);
+  if (dlg.kind === "set" || isNaN(v)) { $("lPreview").textContent = ""; return; }
+  const base = dlgBase();
+  $("lPreview").textContent = base + " → " + Math.min(MAX, base + v);
+}
+
+function openLoyaltyDialog(turfId, kind, fromToday) {
+  const id = turfId || selectedId;
+  const t = state.turfs[id];
   if (!t) return;
+  dlg = { turfId: id, kind: kind || "spray", fromToday: !!fromToday };
+
   $("lTitle").textContent = t.name;
-  $("lValue").value = Math.round(currentLoyalty(t));
-  $("lValue").max = MAX;
+  $("lCurrent").textContent = "Current loyalty: " + dlgBase() + " / " + MAX;
   $("lNote").value = "";
+  $("lSkip").style.display = fromToday ? "" : "none";
+  fillDrugs();
+  setDlgKind(dlg.kind);
   $("loyaltyDialog").showModal();
 }
 
+function checkIn(turfId, task, date) {
+  return write(`checks/${date}/${turfId}/${task}/${memberKey(user)}`, user);
+}
+
 function saveLoyalty() {
-  const t = state.turfs[selectedId];
-  const v = parseInt($("lValue").value);
+  const id = dlg.turfId;
+  const t = state.turfs[id];
   if (!t) return;
-  if (isNaN(v) || v < 0 || v > MAX) return toast("Score has to be 0 - " + MAX);
+  const v = parseInt($("lValue").value);
+  const note = $("lNote").value.trim();
+
+  // manual correction, no checklist
+  if (dlg.kind === "set") {
+    if (isNaN(v) || v < 0 || v > MAX) return toast("Score has to be 0 - " + MAX);
+    if (!needName()) return;
+    write(`turfs/${id}/loyalty`, v);
+    write(`turfs/${id}/loyaltyAt`, Date.now());
+    addLog(t.name, "set loyalty to " + v + (note ? " - " + note : ""));
+    $("loyaltyDialog").close();
+    renderAll();
+    return;
+  }
+
+  if (isNaN(v) || v < 0) return toast("Enter how much loyalty you gained");
   if (!needName()) return;
 
-  write(`turfs/${selectedId}/loyalty`, v);
-  write(`turfs/${selectedId}/loyaltyAt`, Date.now());
+  const kind = dlg.kind;
+  const drug = $("lDrug").value;
+  const base = dlgBase();
+  const next = Math.min(MAX, base + v);
 
-  const note = $("lNote").value.trim();
-  addLog(t.name, "set loyalty to " + v + (note ? " - " + note : ""));
+  write(`turfs/${id}/loyalty`, next);
+  write(`turfs/${id}/loyaltyAt`, Date.now());
 
+  // remember the gain for next time
+  const gains = loadGains();
+  gains[gainKey(kind, drug)] = v;
+  localStorage.setItem(GAINS_KEY, JSON.stringify(gains));
+
+  // tick the Today checklist
+  const date = dlg.fromToday ? ($("dayPick").value || today()) : today();
+  checkIn(id, taskFor(kind), date);
+
+  const what = kind === "spray" ? "sprayed" : "sold " + drug;
+  addLog(t.name, what + " (+" + v + " loyalty, " + base + " → " + next + ")" + (note ? " - " + note : ""));
+
+  $("loyaltyDialog").close();
+  renderAll();
+}
+
+function skipLoyalty() {
+  // check in on the checklist without touching loyalty
+  const t = state.turfs[dlg.turfId];
+  if (!t || !needName()) return;
+  const date = $("dayPick").value || today();
+  const task = taskFor(dlg.kind === "sell" ? "sell" : "spray");
+  checkIn(dlg.turfId, task, date);
+  addLog(t.name, "did: " + task);
   $("loyaltyDialog").close();
   renderAll();
 }
@@ -473,18 +613,6 @@ async function deleteTurf() {
   selectedId = null;
   renderAll();
   toast('Turf deleted');
-}
-
-function deleteTurf() {
-  const t = state.turfs[selectedId];
-  if (!t) return;
-  if (!needName()) return;
-  if (!confirm('Delete "' + t.name + '"?')) return;
-
-  write("turfs/" + selectedId, null);
-  addLog(t.name, "deleted the turf");
-  selectedId = null;
-  renderAll();
 }
 
 function exportData() {
@@ -556,7 +684,7 @@ function setupEvents() {
     const card = e.target.closest(".card");
     if (!card) return;
     const act = e.target.dataset.act;
-    if (act === "loyalty") openLoyaltyDialog();
+    if (act === "loyalty") openLoyaltyDialog(selectedId, "spray", false);
     else if (act === "delete") deleteTurf();
     else selectTurf(card.dataset.id);
   });
@@ -603,6 +731,13 @@ function setupEvents() {
   $("turfSave").onclick = saveNewTurf;
   $("turfCancel").onclick = () => $("turfDialog").close();
   $("lSave").onclick = saveLoyalty;
+  $("lSkip").onclick = skipLoyalty;
+  $("lFix").onclick = () => setDlgKind("set");
+  $("lKind").addEventListener("click", e => {
+    if (e.target.dataset.kind) setDlgKind(e.target.dataset.kind);
+  });
+  $("lDrug").addEventListener("change", () => setDlgKind("sell"));
+  $("lValue").addEventListener("input", updatePreview);
   $("lCancel").onclick = () => $("loyaltyDialog").close();
 
   $("exportBtn").onclick = exportData;
