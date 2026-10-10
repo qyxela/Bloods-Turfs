@@ -33,13 +33,7 @@ async function checkSitePassword() {
 const DB = CONFIG.DATABASE_URL.replace(/\/+$/, "");
 const LOCAL_KEY = "bloods_state";
 const MAX = CONFIG.MAX_LOYALTY;
-
-// Loyalty gained is remembered per activity, so after you've
-// entered it once it is pre-filled next time.
 const GAINS_KEY = "bloods_gains";
-
-// Which checklist task each button is linked to. Matched against CONFIG.TASKS
-// by name; if nothing matches, the default name is added to the checklist.
 const KIND_TASKS = {
   spray: { match: /spray/i, fallback: "Spray" },
   sell:  { match: /sell|drug/i, fallback: "Sell drugs" }
