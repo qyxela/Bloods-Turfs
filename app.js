@@ -34,10 +34,7 @@ const DB = CONFIG.DATABASE_URL.replace(/\/+$/, "");
 const LOCAL_KEY = "bloods_state";
 const MAX = CONFIG.MAX_LOYALTY;
 
-// Drugs you can pick when selling. Edit this list to match the game.
-const DRUGS = ["Coke", "Weed", "Meth", "Other"];
-
-// Loyalty gained is remembered per activity (and per drug), so after you've
+// Loyalty gained is remembered per activity, so after you've
 // entered it once it is pre-filled next time.
 const GAINS_KEY = "bloods_gains";
 
@@ -235,10 +232,6 @@ function kindOfTask(task) {
 
 function loadGains() {
   try { return JSON.parse(localStorage.getItem(GAINS_KEY)) || {}; } catch (e) { return {}; }
-}
-
-function gainKey(kind, drug) {
-  return kind === "sell" ? "sell:" + drug : kind;
 }
 
 // map
@@ -484,14 +477,9 @@ function dlgBase() {
   return t ? Math.round(currentLoyalty(t)) : 0;
 }
 
-function fillDrugs() {
-  $("lDrug").innerHTML = DRUGS.map(d => `<option>${esc(d)}</option>`).join("");
-}
-
 function setDlgKind(kind, keepValue) {
   dlg.kind = kind;
   document.querySelectorAll("#lKind button").forEach(b => b.classList.toggle("on", b.dataset.kind === kind));
-  $("lDrugWrap").style.display = kind === "sell" ? "" : "none";
 
   if (kind === "set") {
     $("lValueLabel").textContent = "New score";
@@ -501,7 +489,7 @@ function setDlgKind(kind, keepValue) {
     $("lValueLabel").textContent = "Loyalty gained";
     $("lValue").removeAttribute("max");
     if (!keepValue) {
-      const g = loadGains()[gainKey(kind, $("lDrug").value)];
+      const g = loadGains()[kind];
       $("lValue").value = g == null ? "" : g;
     }
   }
@@ -526,7 +514,6 @@ function openLoyaltyDialog(turfId, kind, fromToday) {
   $("lCurrent").textContent = "Current loyalty: " + dlgBase() + " / " + MAX;
   $("lNote").value = "";
   $("lSkip").style.display = fromToday ? "" : "none";
-  fillDrugs();
   setDlgKind(dlg.kind);
   $("loyaltyDialog").showModal();
 }
@@ -558,7 +545,6 @@ function saveLoyalty() {
   if (!needName()) return;
 
   const kind = dlg.kind;
-  const drug = $("lDrug").value;
   const base = dlgBase();
   const next = Math.min(MAX, base + v);
 
@@ -567,14 +553,14 @@ function saveLoyalty() {
 
   // remember the gain for next time
   const gains = loadGains();
-  gains[gainKey(kind, drug)] = v;
+  gains[kind] = v;
   localStorage.setItem(GAINS_KEY, JSON.stringify(gains));
 
   // tick the Today checklist
   const date = dlg.fromToday ? ($("dayPick").value || today()) : today();
   checkIn(id, taskFor(kind), date);
 
-  const what = kind === "spray" ? "sprayed" : "sold " + drug;
+  const what = kind === "spray" ? "sprayed" : "sold drugs";
   addLog(t.name, what + " (+" + v + " loyalty, " + base + " → " + next + ")" + (note ? " - " + note : ""));
 
   $("loyaltyDialog").close();
@@ -736,7 +722,6 @@ function setupEvents() {
   $("lKind").addEventListener("click", e => {
     if (e.target.dataset.kind) setDlgKind(e.target.dataset.kind);
   });
-  $("lDrug").addEventListener("change", () => setDlgKind("sell"));
   $("lValue").addEventListener("input", updatePreview);
   $("lCancel").onclick = () => $("loyaltyDialog").close();
 

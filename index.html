@@ -10,7 +10,6 @@
     .seg { display:flex; gap:6px; margin:4px 0 8px; }
     .seg button { flex:1; padding:10px 8px; }
     .seg button.on { background:var(--red, #e5383b); color:#fff; border-color:transparent; }
-    #loyaltyDialog select { width:100%; }
     #lFix { margin-top:8px; opacity:.7; }
   </style>
 </head>
@@ -103,11 +102,6 @@
   <div class="seg" id="lKind">
     <button type="button" data-kind="spray">Spray</button>
     <button type="button" data-kind="sell">Sell drugs</button>
-  </div>
-
-  <div id="lDrugWrap" style="display:none">
-    <label for="lDrug">Which drug?</label>
-    <select id="lDrug"></select>
   </div>
 
   <label for="lValue" id="lValueLabel">Loyalty gained</label>
