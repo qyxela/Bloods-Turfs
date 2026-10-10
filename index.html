@@ -6,12 +6,6 @@
   <title>Bloods Turf Tracker</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="style.css">
-  <style>
-    .seg { display:flex; gap:6px; margin:4px 0 8px; }
-    .seg button { flex:1; padding:10px 8px; }
-    .seg button.on { background:var(--red, #e5383b); color:#fff; border-color:transparent; }
-    #lFix { margin-top:8px; opacity:.7; }
-  </style>
 </head>
 <body>
 
@@ -96,26 +90,12 @@
 
 <dialog id="loyaltyDialog">
   <h3 id="lTitle">Loyalty</h3>
-  <p class="muted" id="lCurrent"></p>
-
-  <label>What did you do?</label>
-  <div class="seg" id="lKind">
-    <button type="button" data-kind="spray">Spray</button>
-    <button type="button" data-kind="sell">Sell drugs</button>
-  </div>
-
-  <label for="lValue" id="lValueLabel">Loyalty gained</label>
-  <input id="lValue" type="number" min="0" placeholder="e.g. 5">
-  <p class="muted" id="lPreview"></p>
-
-  <label for="lNote">Note (optional)</label>
-  <textarea id="lNote" rows="2" placeholder="sold 50 coke, 5 sprays"></textarea>
-
-  <button type="button" class="small" id="lFix">Fix score manually</button>
-
+  <label for="lValue">New score</label>
+  <input id="lValue" type="number" min="0">
+  <label for="lNote">What did you do?</label>
+  <textarea id="lNote" rows="3" placeholder="sold 50 coke, 5 sprays"></textarea>
   <div class="dlg-actions">
     <button id="lCancel">Cancel</button>
-    <button id="lSkip" style="display:none">Check in only</button>
     <button class="primary" id="lSave">Save</button>
   </div>
 </dialog>
